@@ -15293,15 +15293,37 @@ const dictionary = [
 const WORD_LENGTH = 5
 const FLIP_ANIMATION_DURATION = 500
 const DANCE_ANIMATION_DURATION = 500
-const keyboard = document.querySelector("[data-keyboard")
-const alertContainer = document.querySelector("[data-alert-container")
-const guessGrid = document.querySelector("[data-guess-grid")
+const keyboard = document.querySelector("[data-keyboard]")
+const alertContainer = document.querySelector("[data-alert-container]")
+const guessGrid = document.querySelector("[data-guess-grid]")
+const resetButton = document.querySelector(".reset-button")
+resetButton.addEventListener("click",resetGame)
+
+//start with a daily word
 const offsetFromDate = new Date(2022,0,1)
 const msOffset = Date.now() - offsetFromDate
 const dayOffset = msOffset/1000/60/60/24
-const targetWord = targetWords[Math.floor(dayOffset)]
+let targetWord = targetWords[Math.floor(dayOffset)]
+
+//get or create player game stats
+let playerStats = window.localStorage.getItem('playerStats')
+if(playerStats === null) {
+  playerStats = {
+    gamesPlayed:  0,
+    firstGuess:   0,
+    secondGuess:  0,
+    thirdGuess:   0,
+    fourthGuess:  0,
+    fithGuess:    0,
+    sixthGuess:   0,
+    notFound:     0
+  }
+}
+playerStats = JSON.parse(playerStats)
+let currentGuess = 1;
 startInteraction()
 
+//----------------GAME LOGIC----------------------------
 function startInteraction(){
     document.addEventListener("click", handleMouseClick)
     document.addEventListener("keydown", handleKeyPress)
@@ -15385,50 +15407,127 @@ function submitGuess(){
 
 }
 
-function flipTile(tile,index,array,guess) {
-    const letter = tile.dataset.letter
-    const key = keyboard.querySelector(`[data-key="${letter}"i]`)
-    setTimeout(()=> {
-        tile.classList.add("flip")
-    },index * FLIP_ANIMATION_DURATION / 2)
-
-    tile.addEventListener("transitionend", ()=>{
-        tile.classList.remove("flip")
-        if(targetWord[index] === letter){
-            tile.dataset.state = "correct"
-            key.classList.add("correct")
-        } else if(targetWord.includes(letter)){
-            tile.dataset.state = "wrong-location"
-            key.classList.add("wrong-location")
-        } else {
-            tile.dataset.state = "wrong"
-            key.classList.add("wrong")
-        }
-
-        if(index === array.length -1){
-            tile.addEventListener("transitionend", ()=>{
-                startInteraction()
-                checkWinLose(guess,array)
-            }, {once:true})
-            
-        }
-    }, {once:true})
-}
-
 function checkWinLose(guess,tiles) {
     if(guess === targetWord){
         showAlert("You Win!",5000)
+        showAlert(`Guessed in ${currentGuess} tries!`,5000)
         danceTiles(tiles)
         stopInteraction()
+        updatePlayerStats()
+        showStatistics()
         return
     }
     const remaingTiles = guessGrid.querySelectorAll(":not([data-letter])")
+    currentGuess++
     if(remaingTiles.length === 0){
-        showAlert(targetWord.toUpperCase(),null)
+        showAlert(targetWord.toUpperCase(),5000)
         stopInteraction()
+        updatePlayerStats()
+        showStatistics()
     }
 }
 
+function resetGame(){
+  resetBoard()
+  resetKeyboard()
+  clearBarContent()
+  const statsContainer = document.querySelector('.stats-container')
+  statsContainer.style.display = "none"
+  setNewTargetWord()
+  startInteraction()
+}
+
+function resetBoard(){
+  const tiles = getAllTiles()
+  tiles.forEach(tile => {
+    tile.textContent = ""
+    delete tile.dataset.state
+    delete tile.dataset.letter
+  })
+}
+
+function resetKeyboard(){
+  const keys = keyboard.querySelectorAll('[data-key]')
+  keys.forEach(key => {
+    key.classList.remove('correct')
+    key.classList.remove('wrong')
+    key.classList.remove('wrong-location')
+  });
+}
+
+function setNewTargetWord(){
+  targetWord = targetWords[Math.floor(Math.random() * targetWords.length)]
+  console.log(targetWord);
+}
+
+//----------------STATISTICS----------------------------
+function updatePlayerStats(){
+    playerStats.gamesPlayed ++
+    switch(currentGuess){
+      case 1: playerStats.firstGuess++
+      break
+      case 2: playerStats.secondGuess++
+      break
+      case 3: playerStats.thirdGuess++
+      break
+      case 4: playerStats.fourthGuess++
+      break
+      case 5: playerStats.fithGuess++
+      break
+      case 6: playerStats.sixthGuess++
+      break
+      default: playerStats.notFound++
+    }
+    localStorage.setItem('playerStats',JSON.stringify(playerStats))
+}
+
+function showStatistics(){
+  const statsContainer = document.querySelector('.stats-container')
+  const gamesStat = document.querySelector('[data-games]')
+  const winPercentage = document.querySelector('[data-percent]')
+  setTimeout(()=>{
+    statsContainer.style.display = "flex"
+    gamesStat.textContent = playerStats.gamesPlayed
+    winPercentage.textContent = (playerStats.gamesPlayed - playerStats.notFound) / playerStats.gamesPlayed * 100
+  },DANCE_ANIMATION_DURATION * 2)
+  updateGraph()
+}
+
+function updateGraph(){
+  const graphContainer = document.querySelector('.graph-container')
+  setBarWidth(getBar(graphContainer,playerStats.firstGuess),calcGraphBarWidth(playerStats.firstGuess))
+  setBarWidth(getBar(graphContainer,playerStats.secondGuess),calcGraphBarWidth(playerStats.secondGuess))
+  setBarWidth(getBar(graphContainer,playerStats.thirdGuess),calcGraphBarWidth(playerStats.thirdGuess))
+  setBarWidth(getBar(graphContainer,playerStats.fourthGuess),calcGraphBarWidth(playerStats.fourthGuess))
+  setBarWidth(getBar(graphContainer,playerStats.fithGuess),calcGraphBarWidth(playerStats.fithGuess))
+  setBarWidth(getBar(graphContainer,playerStats.sixthGuess),calcGraphBarWidth(playerStats.sixthGuess))
+  //todo animate growth
+}
+
+function getBar(graph,guess){
+  let bar = graph.querySelector(".graph-bar:not([data-count])")
+  bar.dataset.count = guess
+  return bar
+}
+
+function setBarWidth(bar,width){
+  bar.style.setProperty("--dynamic-width",`${width}%`)
+}
+
+function calcGraphBarWidth(guess){
+  return (guess / playerStats.gamesPlayed) * 100
+}
+
+function clearBarContent(){
+  const graphContainer = document.querySelector('.graph-container') 
+  let bars = graphContainer.querySelectorAll(".graph-bar")
+  bars.forEach(bar => {
+    bar.dataset.count = ''
+    delete bar.dataset.count
+  });
+}
+
+//----------------ANIMATIONS----------------------------
 function danceTiles(tiles){
     tiles.forEach((tile,index) => {
         setTimeout(()=> {
@@ -15441,30 +15540,72 @@ function danceTiles(tiles){
     })
 }
 
+function flipTile(tile,index,array,guess) {
+  const letter = tile.dataset.letter
+  const key = keyboard.querySelector(`[data-key="${letter}"i]`)
+  setTimeout(()=> {
+      tile.classList.add("flip")
+  },index * FLIP_ANIMATION_DURATION / 2)
+
+  tile.addEventListener("transitionend", ()=>{
+      tile.classList.remove("flip")
+      if(targetWord[index] === letter){
+          tile.dataset.state = "correct"
+          key.classList.add("correct")
+      } else if(targetWord.includes(letter)){
+          tile.dataset.state = "wrong-location"
+          key.classList.add("wrong-location")
+      } else {
+          tile.dataset.state = "wrong"
+          key.classList.add("wrong")
+      }
+
+      if(index === array.length -1){
+          tile.addEventListener("transitionend", ()=>{
+              startInteraction()
+              checkWinLose(guess,array)
+          }, {once:true})
+          
+      }
+  }, {once:true})
+}
+
+function shakeTiles(tiles){
+  tiles.forEach(tile => {
+      tile.classList.add("shake")
+      tile.addEventListener("animationend", ()=>{
+          tile.classList.remove("shake")
+      },{once: true})
+  })
+}
+
+
 function getActiveTiles(){
     return guessGrid.querySelectorAll('[data-state="active"]')
 }
 
+function getAllTiles(){
+  return guessGrid.querySelectorAll(".tile")
+}
+
+//----------------ALERTS----------------------------
+
 function showAlert(message,duration = 1000){
+  //changed from ()=> to function seems to fix unsure why
+
     const alert = document.createElement("div")
     alert.textContent = message
     alert.classList.add("alert")
     alertContainer.prepend(alert)
-    if(duration == null) return
+    if(duration === null) return
 
     setTimeout(()=> {
         alert.classList.add("hide")
-        alert.addEventListener("transitionend",()=>{
-            alert.remove()
-        })
+        alert.addEventListener("transitionend", removeNode(alert)
+        )
     },duration)
 }
 
-function shakeTiles(tiles){
-    tiles.forEach(tile => {
-        tile.classList.add("shake")
-        tile.addEventListener("animationend", ()=>{
-            tile.classList.remove("shake")
-        },{once: true})
-    })
+function removeNode(node){
+  node.remove()
 }
