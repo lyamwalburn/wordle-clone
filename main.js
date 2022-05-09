@@ -15588,6 +15588,8 @@ function getAllTiles(){
   return guessGrid.querySelectorAll(".tile")
 }
 
+//todo grow bars to size
+
 //----------------ALERTS----------------------------
 
 function showAlert(message,duration = 1000){
