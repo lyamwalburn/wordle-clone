@@ -15487,10 +15487,14 @@ function showStatistics(){
   const winPercentage = document.querySelector('[data-percent]')
   setTimeout(()=>{
     statsContainer.style.display = "flex"
+  },DANCE_ANIMATION_DURATION)
+  setTimeout(()=>{
     gamesStat.textContent = playerStats.gamesPlayed
     winPercentage.textContent = (playerStats.gamesPlayed - playerStats.notFound) / playerStats.gamesPlayed * 100
+    updateGraph()
+    
   },DANCE_ANIMATION_DURATION * 2)
-  updateGraph()
+  
 }
 
 function updateGraph(){
@@ -15522,9 +15526,11 @@ function clearBarContent(){
   const graphContainer = document.querySelector('.graph-container') 
   let bars = graphContainer.querySelectorAll(".graph-bar")
   bars.forEach(bar => {
+    setBarWidth(bar,5)
     bar.dataset.count = ''
     delete bar.dataset.count
   });
+
 }
 
 //----------------ANIMATIONS----------------------------
@@ -15588,7 +15594,6 @@ function getAllTiles(){
   return guessGrid.querySelectorAll(".tile")
 }
 
-//todo grow bars to size
 
 //----------------ALERTS----------------------------
 

@@ -279,4 +279,7 @@ body{
     text-align: right;
     padding-right: .3em;
     padding-top: .1em;
+    transition: width 1.5s linear;
+    /* background colour should be gray and transition into green */
 }
+
