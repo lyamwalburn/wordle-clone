@@ -15307,6 +15307,7 @@ let targetWord = targetWords[Math.floor(dayOffset)]
 
 //get or create player game stats
 let playerStats = window.localStorage.getItem('playerStats')
+
 if(playerStats === null) {
   playerStats = {
     gamesPlayed:  0,
@@ -15318,8 +15319,10 @@ if(playerStats === null) {
     sixthGuess:   0,
     notFound:     0
   }
+} else {
+  playerStats = JSON.parse(playerStats)
 }
-playerStats = JSON.parse(playerStats)
+
 let currentGuess = 1;
 startInteraction()
 
@@ -15433,6 +15436,7 @@ function resetGame(){
   clearBarContent()
   const statsContainer = document.querySelector('.stats-container')
   statsContainer.style.display = "none"
+  currentGuess = 1
   setNewTargetWord()
   startInteraction()
 }
